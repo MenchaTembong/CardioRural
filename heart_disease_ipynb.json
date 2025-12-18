@@ -1,0 +1,288 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Heart Disease Prediction Model\n",
+        "## Cardiovascular Risk Classification using Random Forest"
+      ],
+      "metadata": {
+        "id": "title_section"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Import Libraries"
+      ],
+      "metadata": {
+        "id": "T_4kSAAhOb5r"
+      }
+    },
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "AkMFzhs1v6kM"
+      },
+      "outputs": [],
+      "source": [
+        "import pandas as pd\n",
+        "from sklearn.pipeline import Pipeline\n",
+        "from sklearn.compose import ColumnTransformer\n",
+        "from sklearn.preprocessing import OneHotEncoder, StandardScaler\n",
+        "from sklearn.ensemble import RandomForestClassifier\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.metrics import classification_report, accuracy_score\n",
+        "import joblib"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "8eb4a997"
+      },
+      "source": [
+        "## Dataset Overview\n",
+        "\n",
+        "The dataset contains anonymized health information for patients, including features such as age, sex, cholesterol levels, and presence of heart disease. It is used to train a binary classification model to predict cardiovascular risk.\n",
+        "\n",
+        "**Feature Descriptions:**\n",
+        "- `Age`: Age of the patient\n",
+        "- `Sex`: Gender\n",
+        "- `ChestPainType`: Chest pain type\n",
+        "- `RestingBP`: Resting blood pressure\n",
+        "- `Cholesterol`: Serum cholesterol in mg/dl\n",
+        "- `FastingBS`: Fasting blood sugar\n",
+        "- `RestingECG`: Resting electrocardiogram results\n",
+        "- `MaxHR`: Maximum heart rate achieved\n",
+        "- `ExerciseAngina`: Exercise induced angina\n",
+        "- `Oldpeak`: ST depression induced by exercise relative to rest\n",
+        "- `ST_Slope`: The slope of the peak exercise ST segment\n",
+        "- `HeartDisease`: 1 = risk, 0 = no risk (target variable)"
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Data Loading"
+      ],
+      "metadata": {
+        "id": "nikaCgufOSIm"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Load the dataset\n",
+        "df = pd.read_csv('heart.csv')\n",
+        "df.head()"
+      ],
+      "metadata": {
+        "id": "5vFBGIhpwMew"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Display dataset information\n",
+        "print(df.info())"
+      ],
+      "metadata": {
+        "id": "psAkeitBwL8C"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Check for missing values\n",
+        "df.isnull().sum()"
+      ],
+      "metadata": {
+        "id": "UYJxxkuCwrd6"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Data Preprocessing"
+      ],
+      "metadata": {
+        "id": "63M8t3LQOGy4"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Separate features and target\n",
+        "X = df.drop('HeartDisease', axis=1)\n",
+        "y = df['HeartDisease']"
+      ],
+      "metadata": {
+        "id": "separate_features"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Define categorical and numerical columns\n",
+        "categorical_cols = [\"Sex\", \"ChestPainType\", \"RestingECG\", \"ExerciseAngina\", \"ST_Slope\"]\n",
+        "numerical_cols = [\"Age\", \"RestingBP\", \"Cholesterol\", \"FastingBS\", \"MaxHR\", \"Oldpeak\"]"
+      ],
+      "metadata": {
+        "id": "o3RownUOEg5d"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Create transformers for preprocessing\n",
+        "categorical_transformer = OneHotEncoder(handle_unknown='ignore')\n",
+        "numerical_transformer = StandardScaler()"
+      ],
+      "metadata": {
+        "id": "L21MLUgbEif4"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Create preprocessing pipeline\n",
+        "preprocessor = ColumnTransformer(\n",
+        "    transformers=[\n",
+        "        ('num', numerical_transformer, numerical_cols),\n",
+        "        ('cat', categorical_transformer, categorical_cols)\n",
+        "    ]\n",
+        ")"
+      ],
+      "metadata": {
+        "id": "OInl7Z3aEmFW"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Create complete pipeline with classifier\n",
+        "pipeline = Pipeline(steps=[\n",
+        "    ('preprocessor', preprocessor),\n",
+        "    ('classifier', RandomForestClassifier(random_state=42))\n",
+        "])"
+      ],
+      "metadata": {
+        "id": "LK0bR_7sEroh"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Model Training and Evaluation"
+      ],
+      "metadata": {
+        "id": "training_section"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Split the data\n",
+        "X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)\n",
+        "\n",
+        "# Train the model\n",
+        "print(\"Training the model...\")\n",
+        "pipeline.fit(X_train, y_train)\n",
+        "\n",
+        "# Evaluate accuracy\n",
+        "print(f\"\\nModel accuracy: {pipeline.score(X_test, y_test):.2f}\")"
+      ],
+      "metadata": {
+        "id": "vXtd4-6REtQh"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Get predictions and detailed metrics\n",
+        "y_pred = pipeline.predict(X_test)\n",
+        "print(\"Classification Report:\")\n",
+        "print(classification_report(y_test, y_pred))"
+      ],
+      "metadata": {
+        "id": "u0kluRznQtVM"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Save the Model"
+      ],
+      "metadata": {
+        "id": "save_section"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Save the trained pipeline\n",
+        "model_filename = \"cr_model.pkl\"\n",
+        "joblib.dump(pipeline, model_filename)\n",
+        "print(f\"Model saved as '{model_filename}'\")"
+      ],
+      "metadata": {
+        "id": "HN55apkpEwTy"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Conclusion\n",
+        "\n",
+        "The trained Random Forest model achieved good accuracy and F1-score. The model is saved for integration into the Streamlit-based CardioRural application.\n",
+        "\n",
+        "## Next Steps\n",
+        "\n",
+        "- Validate the model with external data\n",
+        "- Tune hyperparameters for better performance\n",
+        "- Deploy on low-resource mobile platforms"
+      ],
+      "metadata": {
+        "id": "8aDIMgsOMvoj"
+      }
+    }
+  ]
+}
