@@ -3,7 +3,7 @@
 Preventing cardiovascular disease in rural Canadian communities using data-driven mobile screening tools.CardioRural is an open-source, mobile-friendly cardiovascular risk assessment tool built with [Streamlit](https://streamlit.io/) It’s designed to support underserved rural populations by enabling preventive heart screening through accessible technology.
 
 <p align="center">
-<img src="https://i.imgur.com/vQu2nhr.png" height="85%" width="85%" alt="Image Analysis Dataflow"/>
+<img src="https://i.imgur.com/VEYlHPO.png" height="85%" width="85%" alt="Image Analysis Dataflow"/>
 </p>.
 
 ## Why CardioRural ❤️‍🩺
@@ -25,12 +25,9 @@ Cardiovascular disease (CVD) remains a leading cause of mortality in Canada, wit
 - ## 🧪 How It Works
 
 CardioRural uses a trained machine learning model to estimate cardiovascular disease risk and deliver actionable insights.
-
-### Model & Architecture
-- **Logistic Regression model** trained to predict heart disease risk
-- Built using **publicly available datasets** (e.g., Kaggle Heart Disease Dataset)
-- Data preprocessing handled through a **ColumnTransformer pipeline**
-- Model serialized and deployed using **scikit-learn** and **joblib**
+<p align="center">
+<img src="https://i.imgur.com/15VH4rS.png" height="85%" width="85%" alt="Image Analysis Dataflow"/>
+</p>.
 
 ### Workflow
 1. Users input basic clinical and demographic data via a mobile-friendly interface  
@@ -43,8 +40,6 @@ CardioRural uses a trained machine learning model to estimate cardiovascular dis
 - Integration of **real-world community health data** to improve model accuracy and relevance
 
   ## ⚙️ Tech Stack
-
-- **Python** 🐍 — Core programming language  
 - **Streamlit** 📱 — Interactive, mobile-friendly web interface  
 - **Pandas** 📊 — Data cleaning, transformation, and analysis  
 - **Scikit-learn** 🤖 — Machine learning modeling and preprocessing
@@ -52,9 +47,8 @@ CardioRural uses a trained machine learning model to estimate cardiovascular dis
 ## 🛤️ Roadmap
 
 - ✅ MVP application live and functional  
-- ⬜ Local language support (Yoruba, Hausa, Igbo)  
-- ⬜ SMS-based access for low-connectivity regions  
-- ⬜ AI-powered smart triage and risk prioritization  
+- ⬜ Local language support (english, french)  
+- ⬜ SMS-based access for low-connectivity regions   
 - ⬜ Collaboration with NGOs and Primary Health Centres (PHCs) for real-world deployment  
 
 ---
