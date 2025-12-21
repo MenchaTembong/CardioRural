@@ -1,836 +1,576 @@
-<html lang="en"><head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.13/html-to-image.min.js" integrity="sha512-iZ2ORl595Wx6miw+GuadDet4WQbdSWS3JLMoNfY8cRGoEFy6oT3G9IbcrBeL6AfkgpA51ETt/faX6yLV+/gFJg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script>
-      (function() {
-        const originalConsole = window.console;
-        window.console = {
-          log: (...args) => {
-            originalConsole.log(...args);
-            window.parent.postMessage({ type: 'console', message: args.join(' ') }, '*');
-          },
-          error: (...args) => {
-            originalConsole.error(...args);
-            window.parent.postMessage({ type: 'console', message: 'Error: ' + args.join(' ') }, '*');
-          },
-          warn: (...args) => {
-            originalConsole.warn(...args);
-            window.parent.postMessage({ type: 'console', message: 'Warning: ' + args.join(' ') }, '*');
-          }
-        };
+import React, { useState } from 'react';
+import { Heart, AlertCircle, CheckCircle, Info, Activity } from 'lucide-react';
 
-        let requestId = 0;
-        let callbacksMap = new Map();
-        let streamControllers = new Map();
-        
-        window.claude = {
-          complete: (prompt) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'claudeComplete', id, prompt }, '*');
-            });
-          }
-        };
+export default function CardioCanada() {
+  const [language, setLanguage] = useState('en');
+  const [formData, setFormData] = useState({
+    age: '',
+    sex: '',
+    chestPain: '',
+    restingBP: '',
+    cholesterol: '',
+    fastingBS: '',
+    restingECG: '',
+    maxHR: '',
+    exerciseAngina: '',
+    oldpeak: '',
+    stSlope: ''
+  });
 
-        window.storage = {
-          get: (key, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageGet', id, key, shared }, '*');
-            });
-          },
-          set: (key, value, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageSet', id, key, value, shared }, '*');
-            });
-          },
-          delete: (key, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageDelete', id, key, shared }, '*');
-            });
-          },
-          list: (prefix, shared = false) => {
-            return new Promise((resolve, reject) => {
-              const id = requestId++;
-              callbacksMap.set(id, { resolve, reject });
-              window.parent.postMessage({ type: 'storageList', id, prefix, shared }, '*');
-            });
-          }
-        };
+  const [result, setResult] = useState(null);
+  const [errors, setErrors] = useState({});
 
-        let pendingBlobs = new Map();
-        URL.createObjectURL = (blob) => {
-          // Store the blob and create an ID and URL for it
-          const blobId = `blob-${Date.now()}-${Math.random()}`;
-          pendingBlobs.set(blobId, blob);
-          return `blob-request://${blobId}`;
-        };
+  const translations = {
+    en: {
+      title: "CardioRural",
+      subtitle: "Cardiovascular Risk Assessment Tool",
+      developer: "Developed by MENCHA",
+      infoText: "This tool provides preliminary cardiovascular risk screening based on clinical parameters. It is designed for Canadian healthcare settings and follows Health Canada guidelines.",
+      patientInfo: "Patient Information",
+      age: "Age (years)",
+      sex: "Sex",
+      male: "Male",
+      female: "Female",
+      chestPain: "Chest Pain Type",
+      typicalAngina: "Typical Angina",
+      atypicalAngina: "Atypical Angina",
+      nonAnginal: "Non-Anginal Pain",
+      asymptomatic: "Asymptomatic",
+      restingBP: "Resting Blood Pressure (mmHg)",
+      cholesterol: "Cholesterol (mg/dL)",
+      fastingBS: "Fasting Blood Sugar > 120 mg/dL",
+      yes: "Yes",
+      no: "No",
+      restingECG: "Resting ECG Result",
+      normal: "Normal",
+      stWave: "ST-T Wave Abnormality",
+      lvh: "Left Ventricular Hypertrophy",
+      maxHR: "Maximum Heart Rate (bpm)",
+      exerciseAngina: "Exercise-Induced Angina",
+      stDepression: "ST Depression (Oldpeak)",
+      stSlope: "ST Slope",
+      upsloping: "Upsloping",
+      flat: "Flat",
+      downsloping: "Downsloping",
+      calculate: "Calculate Risk Assessment",
+      select: "Select...",
+      highRisk: "High Risk",
+      moderateRisk: "Moderate Risk",
+      lowRisk: "Low Risk",
+      riskScore: "Risk Score",
+      recommendations: "Recommended Actions:",
+      provincialResources: "Provincial Resources:",
+      resourcesText: "Ontario: Telehealth Ontario (1-866-797-0000) • Alberta: Health Link (811) • BC: HealthLink BC (811) • Quebec: Info-Santé (811)",
+      disclaimer: "Medical Disclaimer:",
+      disclaimerText: "This tool provides preliminary cardiovascular risk screening for educational purposes only. It is NOT a substitute for professional medical diagnosis, treatment, or clinical judgment. Always consult with a qualified healthcare provider for proper medical evaluation. In case of emergency (chest pain, difficulty breathing), call 911 immediately.",
+      footer: "Built for Canadian healthcare settings • Following Health Canada guidelines",
+      license: "Open source • MIT License",
+      highRiskRecs: [
+        "Seek immediate medical consultation with a cardiologist",
+        "Consider comprehensive cardiac evaluation including stress test",
+        "Discuss medication options with your healthcare provider",
+        "Monitor blood pressure and heart rate daily",
+        "Adopt heart-healthy diet (Mediterranean or DASH diet)",
+        "Engage in supervised cardiac rehabilitation if recommended"
+      ],
+      moderateRiskRecs: [
+        "Schedule appointment with family physician for cardiovascular assessment",
+        "Have cholesterol and blood sugar checked regularly",
+        "Start moderate physical activity (150 min/week as per Health Canada)",
+        "Reduce sodium intake to less than 2,300 mg/day",
+        "Maintain healthy weight (BMI 18.5-24.9)",
+        "Consider stress management techniques",
+        "Quit smoking if applicable"
+      ],
+      lowRiskRecs: [
+        "Continue regular health checkups",
+        "Maintain active lifestyle with regular exercise",
+        "Follow Canada's Food Guide for healthy eating",
+        "Keep blood pressure under 130/80 mmHg",
+        "Monitor cholesterol levels annually",
+        "Stay tobacco-free and limit alcohol consumption"
+      ],
+      errors: {
+        age: "Age must be between 18 and 120",
+        restingBP: "BP must be between 80 and 200 mmHg",
+        cholesterol: "Cholesterol must be between 100 and 600 mg/dL",
+        maxHR: "Heart rate must be between 60 and 220 bpm",
+        oldpeak: "ST depression must be between 0 and 10"
+      }
+    },
+    fr: {
+      title: "CardioCanada",
+      subtitle: "Outil d'évaluation du risque cardiovasculaire",
+      infoText: "Cet outil fournit un dépistage préliminaire du risque cardiovasculaire basé sur des paramètres cliniques. Il est conçu pour les établissements de santé canadiens et suit les directives de Santé Canada.",
+      patientInfo: "Informations sur le patient",
+      age: "Âge (années)",
+      sex: "Sexe",
+      male: "Homme",
+      female: "Femme",
+      chestPain: "Type de douleur thoracique",
+      typicalAngina: "Angine typique",
+      atypicalAngina: "Angine atypique",
+      nonAnginal: "Douleur non angineuse",
+      asymptomatic: "Asymptomatique",
+      restingBP: "Tension artérielle au repos (mmHg)",
+      cholesterol: "Cholestérol (mg/dL)",
+      fastingBS: "Glycémie à jeun > 120 mg/dL",
+      yes: "Oui",
+      no: "Non",
+      restingECG: "Résultat ECG au repos",
+      normal: "Normal",
+      stWave: "Anomalie de l'onde ST-T",
+      lvh: "Hypertrophie ventriculaire gauche",
+      maxHR: "Fréquence cardiaque maximale (bpm)",
+      exerciseAngina: "Angine induite par l'exercice",
+      stDepression: "Dépression ST (Oldpeak)",
+      stSlope: "Pente ST",
+      upsloping: "Ascendante",
+      flat: "Plate",
+      downsloping: "Descendante",
+      calculate: "Calculer l'évaluation du risque",
+      select: "Sélectionner...",
+      highRisk: "Risque élevé",
+      moderateRisk: "Risque modéré",
+      lowRisk: "Risque faible",
+      riskScore: "Score de risque",
+      recommendations: "Actions recommandées :",
+      provincialResources: "Ressources provinciales :",
+      resourcesText: "Ontario : Télésanté Ontario (1-866-797-0000) • Alberta : Health Link (811) • C.-B. : HealthLink BC (811) • Québec : Info-Santé (811)",
+      disclaimer: "Avertissement médical :",
+      disclaimerText: "Cet outil fournit un dépistage préliminaire du risque cardiovasculaire à des fins éducatives uniquement. Il ne remplace PAS un diagnostic médical professionnel, un traitement ou un jugement clinique. Consultez toujours un professionnel de la santé qualifié pour une évaluation médicale appropriée. En cas d'urgence (douleur thoracique, difficulté à respirer), composez le 911 immédiatement.",
+      footer: "Conçu pour les établissements de santé canadiens • Conformément aux directives de Santé Canada",
+      license: "Code source ouvert • Licence MIT",
+      highRiskRecs: [
+        "Consultez immédiatement un cardiologue",
+        "Envisagez une évaluation cardiaque complète incluant un test d'effort",
+        "Discutez des options de médication avec votre professionnel de santé",
+        "Surveillez votre tension artérielle et fréquence cardiaque quotidiennement",
+        "Adoptez une alimentation saine pour le cœur (diète méditerranéenne ou DASH)",
+        "Participez à une réadaptation cardiaque supervisée si recommandé"
+      ],
+      moderateRiskRecs: [
+        "Prenez rendez-vous avec votre médecin de famille pour évaluation cardiovasculaire",
+        "Faites vérifier régulièrement votre cholestérol et glycémie",
+        "Commencez une activité physique modérée (150 min/semaine selon Santé Canada)",
+        "Réduisez l'apport en sodium à moins de 2 300 mg/jour",
+        "Maintenez un poids santé (IMC 18,5-24,9)",
+        "Envisagez des techniques de gestion du stress",
+        "Arrêtez de fumer si applicable"
+      ],
+      lowRiskRecs: [
+        "Continuez les bilans de santé réguliers",
+        "Maintenez un mode de vie actif avec exercice régulier",
+        "Suivez le Guide alimentaire canadien pour une alimentation saine",
+        "Gardez la tension artérielle sous 130/80 mmHg",
+        "Surveillez les niveaux de cholestérol annuellement",
+        "Restez sans tabac et limitez la consommation d'alcool"
+      ],
+      errors: {
+        age: "L'âge doit être entre 18 et 120",
+        restingBP: "La tension artérielle doit être entre 80 et 200 mmHg",
+        cholesterol: "Le cholestérol doit être entre 100 et 600 mg/dL",
+        maxHR: "La fréquence cardiaque doit être entre 60 et 220 bpm",
+        oldpeak: "La dépression ST doit être entre 0 et 10"
+      }
+    }
+  };
 
-        URL.revokeObjectURL = (url) => {
-          // Remove the blob from our store
-          const blobId = url.replace("blob-request://", "");
-          pendingBlobs.delete(blobId);
-        };
+  const t = translations[language];
 
-        const getBlobFromURL = (url) => {
-          const blobId = url.replace("blob-request://", "");
-          return pendingBlobs.get(blobId);
-        };
-
-        // Override global fetch with streaming support
-        window.fetch = (url, init = {}) => {
-          return new Promise((resolve, reject) => {
-            const id = requestId++;
-            const channelId = `fetch-${id}-${Date.now()}`;
-            
-            callbacksMap.set(id, { 
-              resolve: (response) => {
-                // Create a ReadableStream for the response body
-                const stream = new ReadableStream({
-                  start(controller) {
-                    streamControllers.set(channelId, controller);
-                  },
-                  cancel() {
-                    streamControllers.delete(channelId);
-                  }
-                });
-                
-                // Create and return the Response with the stream
-                resolve(new Response(stream, {
-                  status: response.status,
-                  statusText: response.statusText,
-                  headers: response.headers
-                }));
-              },
-              reject,
-              channelId
-            });
-            
-            window.parent.postMessage({
-              type: 'proxyFetch',
-              id,
-              url,
-              init,
-              channelId
-            }, '*');
-          });
-        };
-
-        window.addEventListener('message', async (event) => {
-          if (event.data.type === 'takeScreenshot') {
-            const rootElement = document.getElementById('artifacts-component-root-html');
-            if (!rootElement) {
-              window.parent.postMessage({
-                type: 'screenshotError',
-                error: new Error('Root element not found'),
-              }, '*');
-            }
-            const screenshot = await htmlToImage.toPng(rootElement, {
-              imagePlaceholder:
-                "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAA1JREFUGFdjePDgwX8ACOQDoNsk0PMAAAAASUVORK5CYII=",
-            });
-            window.parent.postMessage({
-              type: 'screenshotData',
-              data: screenshot,
-            }, '*');
-          } else if (event.data.type === 'claudeComplete') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.completion);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'proxyFetchResponse') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-              callbacksMap.delete(event.data.id);
-            } else {
-              // Initial response with headers, status, etc.
-              callback.resolve({
-                status: event.data.status,
-                statusText: event.data.statusText,
-                headers: event.data.headers
-              });
-              // Don't delete the callback yet if streaming
-              if (!event.data.body) {
-                callbacksMap.delete(event.data.id);
-              }
-            }
-          } else if (event.data.type === 'proxyFetchStream') {
-            // Handle streaming data chunks
-            const controller = streamControllers.get(event.data.channelId);
-            if (controller) {
-              if (event.data.error) {
-                controller.error(new Error(event.data.error));
-                streamControllers.delete(event.data.channelId);
-              } else if (event.data.done) {
-                controller.close();
-                streamControllers.delete(event.data.channelId);
-                // Clean up the callback
-                const callback = Array.from(callbacksMap.entries()).find(
-                  ([_, value]) => value.channelId === event.data.channelId
-                );
-                if (callback) {
-                  callbacksMap.delete(callback[0]);
-                }
-              } else if (event.data.chunk) {
-                controller.enqueue(new Uint8Array(event.data.chunk));
-              }
-            }
-          } else if (event.data.type === 'storageGet') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageSet') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageDelete') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          } else if (event.data.type === 'storageList') {
-            const callback = callbacksMap.get(event.data.id);
-            if (event.data.error) {
-              callback.reject(new Error(event.data.error));
-            } else {
-              callback.resolve(event.data.result);
-            }
-            callbacksMap.delete(event.data.id);
-          }
-        });
-
-        window.addEventListener('click', (event) => {
-          const isEl = event.target instanceof HTMLElement;
-          if (!isEl) return;
+  const validateForm = () => {
+    const newErrors = {};
     
-          // find ancestor links
-          const linkEl = event.target.closest("a");
-          if (!linkEl || !linkEl.href) return;
+    if (!formData.age || formData.age < 18 || formData.age > 120) {
+      newErrors.age = t.errors.age;
+    }
+    if (!formData.restingBP || formData.restingBP < 80 || formData.restingBP > 200) {
+      newErrors.restingBP = t.errors.restingBP;
+    }
+    if (!formData.cholesterol || formData.cholesterol < 100 || formData.cholesterol > 600) {
+      newErrors.cholesterol = t.errors.cholesterol;
+    }
+    if (!formData.maxHR || formData.maxHR < 60 || formData.maxHR > 220) {
+      newErrors.maxHR = t.errors.maxHR;
+    }
+    if (!formData.oldpeak || formData.oldpeak < 0 || formData.oldpeak > 10) {
+      newErrors.oldpeak = t.errors.oldpeak;
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const calculateRisk = () => {
+    if (!validateForm()) return;
+
+    // Simple risk scoring algorithm (placeholder for ML model)
+    let riskScore = 0;
     
-          event.preventDefault();
-          event.stopImmediatePropagation();
+    // Age factor
+    if (formData.age > 65) riskScore += 3;
+    else if (formData.age > 55) riskScore += 2;
+    else if (formData.age > 45) riskScore += 1;
+
+    // Sex factor
+    if (formData.sex === 'M') riskScore += 1;
+
+    // Chest pain
+    if (formData.chestPain === 'ASY') riskScore += 3;
+    else if (formData.chestPain === 'ATA') riskScore += 2;
+    else if (formData.chestPain === 'NAP') riskScore += 1;
+
+    // Blood pressure
+    if (formData.restingBP > 140) riskScore += 2;
+    else if (formData.restingBP > 130) riskScore += 1;
+
+    // Cholesterol
+    if (formData.cholesterol > 240) riskScore += 2;
+    else if (formData.cholesterol > 200) riskScore += 1;
+
+    // Fasting blood sugar
+    if (formData.fastingBS === '1') riskScore += 1;
+
+    // ECG
+    if (formData.restingECG === 'ST' || formData.restingECG === 'LVH') riskScore += 2;
+
+    // Max heart rate
+    if (formData.maxHR < 100) riskScore += 2;
+    else if (formData.maxHR < 120) riskScore += 1;
+
+    // Exercise angina
+    if (formData.exerciseAngina === 'Y') riskScore += 2;
+
+    // ST depression
+    if (formData.oldpeak > 2) riskScore += 3;
+    else if (formData.oldpeak > 1) riskScore += 2;
+    else if (formData.oldpeak > 0) riskScore += 1;
+
+    // ST slope
+    if (formData.stSlope === 'Down') riskScore += 2;
+    else if (formData.stSlope === 'Flat') riskScore += 1;
+
+    // Determine risk level
+    let riskLevel, riskColor, recommendations;
     
-          if (linkEl.href.startsWith("blob-request:")) {
-            const blob = getBlobFromURL(linkEl.href);
-            if (!blob) return;
-            void blob.arrayBuffer().then((data) => {
-              window.parent.postMessage({
-                type: "downloadFile",
-                filename: linkEl.download,
-                data,
-                mimeType: blob.type || "application/octet-stream",
-              });
-            });
-          } else if (linkEl.href.startsWith("data:")) {
-            const [header, base64Data] = linkEl.href.split(",");
-            const mimeMatch = header.match(/data:([^;]+)/);
-            const mimeType = mimeMatch ? mimeMatch[1] : "application/octet-stream";
-            const binaryString = atob(base64Data);
-            const data = Uint8Array.from(binaryString, (c) =>
-              c.charCodeAt(0),
-            ).buffer;
-            window.parent.postMessage({
-              type: "downloadFile",
-              filename: linkEl.download,
-              data,
-              mimeType,
-            });
-          } else {
-            let linkUrl;
-            try {
-              linkUrl = new URL(linkEl.href);
-            } catch (error) {
-              return;
-            }
-    
-            if (linkUrl.hostname === window.location.hostname) return;
-      
-            window.parent.postMessage({
-              type: 'openExternal',
-              href: linkEl.href,
-            }, '*');
-          }
-      });
+    if (riskScore >= 15) {
+      riskLevel = t.highRisk;
+      riskColor = 'bg-red-100 border-red-500 text-red-900';
+      recommendations = t.highRiskRecs;
+    } else if (riskScore >= 8) {
+      riskLevel = t.moderateRisk;
+      riskColor = 'bg-yellow-100 border-yellow-500 text-yellow-900';
+      recommendations = t.moderateRiskRecs;
+    } else {
+      riskLevel = t.lowRisk;
+      riskColor = 'bg-green-100 border-green-500 text-green-900';
+      recommendations = t.lowRiskRecs;
+    }
 
-        const originalOpen = window.open;
-        window.open = function (url) {
-          window.parent.postMessage({
-            type: "openExternal",
-            href: url,
-          }, "*");
-        };
+    setResult({
+      riskLevel,
+      riskColor,
+      riskScore,
+      recommendations
+    });
+  };
 
-        window.addEventListener('error', (event) => {
-          window.parent.postMessage({ type: 'console', message: 'Uncaught Error: ' + event.message }, '*');
-        });
-      })();
-    </script>
-  
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Heart Disease Prediction Model</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: #fff;
-            color: #212529;
-            line-height: 1.6;
-            padding: 20px;
-        }
-
-        .notebook {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-        }
-
-        .cell {
-            margin-bottom: 0;
-            border-left: 3px solid transparent;
-        }
-
-        .cell:hover {
-            border-left-color: #2196F3;
-        }
-
-        .cell-header {
-            display: flex;
-            align-items: center;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: #666;
-            font-family: 'Consolas', 'Monaco', monospace;
-        }
-
-        .cell-label {
-            min-width: 80px;
-            font-weight: 600;
-        }
-
-        .markdown-cell {
-            padding: 20px 12px;
-        }
-
-        .markdown-cell h1 {
-            font-size: 32px;
-            font-weight: 400;
-            margin-bottom: 20px;
-            color: #212529;
-        }
-
-        .markdown-cell h2 {
-            font-size: 24px;
-            font-weight: 400;
-            margin: 30px 0 15px 0;
-            color: #212529;
-        }
-
-        .markdown-cell h3 {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 25px 0 15px 0;
-            color: #212529;
-        }
-
-        .markdown-cell p {
-            margin-bottom: 15px;
-            color: #212529;
-        }
-
-        .markdown-cell ul {
-            margin: 10px 0 15px 20px;
-        }
-
-        .markdown-cell li {
-            margin: 8px 0;
-        }
-
-        .markdown-cell strong {
-            font-weight: 600;
-        }
-
-        .markdown-cell code {
-            background: #f5f5f5;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            color: #c7254e;
-        }
-
-        .code-cell {
-            background: #f7f7f7;
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            margin: 8px 12px;
-            overflow: hidden;
-        }
-
-        .code-input {
-            background: #f7f7f7;
-            padding: 12px 16px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            line-height: 1.5;
-            color: #212529;
-            overflow-x: auto;
-        }
-
-        .code-output {
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            padding: 12px 16px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            font-size: 13px;
-            overflow-x: auto;
-        }
-
-        .keyword {
-            color: #008000;
-            font-weight: bold;
-        }
-
-        .string {
-            color: #BA2121;
-        }
-
-        .comment {
-            color: #408080;
-            font-style: italic;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 15px 0;
-            font-size: 13px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px 12px;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f5f5f5;
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        .output-text {
-            white-space: pre-wrap;
-            color: #212529;
-        }
-    </style>
-</head>
-<body id="artifacts-component-root-html">
-    <div class="notebook">
-        <!-- Download Button -->
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
-            <button onclick="downloadHTML()" style="background: #2196F3; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
-                ⬇️ Download HTML
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-blue-50 p-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Language Toggle */}
+        <div className="flex justify-end mb-4">
+          <div className="bg-white rounded-lg shadow-md p-2 flex gap-2">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                language === 'en'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              English
             </button>
+            <button
+              onClick={() => setLanguage('fr')}
+              className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                language === 'fr'
+                  ? 'bg-red-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Français
+            </button>
+          </div>
         </div>
 
-        <!-- Title Cell -->
-        <div class="cell markdown-cell">
-            <h1>Heart Disease Prediction Model</h1>
-            <h2>Cardiovascular Risk Classification using Random Forest</h2>
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-l-4 border-red-600">
+          <div className="flex items-center gap-3 mb-2">
+            <Heart className="w-10 h-10 text-red-600" />
+            <div>
+              <h1 className="text-3xl font-bold text-gray-800">{t.title}</h1>
+              <p className="text-gray-600">{t.subtitle}</p>
+            </div>
+          </div>
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg flex items-start gap-2">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-900">
+              {t.infoText}
+            </p>
+          </div>
         </div>
 
-        <!-- Import Libraries -->
-        <div class="cell markdown-cell">
-            <h3>Import Libraries</h3>
+        {/* Main Form */}
+        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <Activity className="w-6 h-6 text-red-600" />
+            {t.patientInfo}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Age */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.age} *
+              </label>
+              <input
+                type="number"
+                value={formData.age}
+                onChange={(e) => handleInputChange('age', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., 45"
+              />
+              {errors.age && <p className="text-red-600 text-xs mt-1">{errors.age}</p>}
+            </div>
+
+            {/* Sex */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.sex} *
+              </label>
+              <select
+                value={formData.sex}
+                onChange={(e) => handleInputChange('sex', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="M">{t.male}</option>
+                <option value="F">{t.female}</option>
+              </select>
+            </div>
+
+            {/* Chest Pain Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.chestPain} *
+              </label>
+              <select
+                value={formData.chestPain}
+                onChange={(e) => handleInputChange('chestPain', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="TA">{t.typicalAngina}</option>
+                <option value="ATA">{t.atypicalAngina}</option>
+                <option value="NAP">{t.nonAnginal}</option>
+                <option value="ASY">{t.asymptomatic}</option>
+              </select>
+            </div>
+
+            {/* Resting BP */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.restingBP} *
+              </label>
+              <input
+                type="number"
+                value={formData.restingBP}
+                onChange={(e) => handleInputChange('restingBP', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., 120"
+              />
+              {errors.restingBP && <p className="text-red-600 text-xs mt-1">{errors.restingBP}</p>}
+            </div>
+
+            {/* Cholesterol */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.cholesterol} *
+              </label>
+              <input
+                type="number"
+                value={formData.cholesterol}
+                onChange={(e) => handleInputChange('cholesterol', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., 200"
+              />
+              {errors.cholesterol && <p className="text-red-600 text-xs mt-1">{errors.cholesterol}</p>}
+            </div>
+
+            {/* Fasting Blood Sugar */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.fastingBS} *
+              </label>
+              <select
+                value={formData.fastingBS}
+                onChange={(e) => handleInputChange('fastingBS', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="0">{t.no}</option>
+                <option value="1">{t.yes}</option>
+              </select>
+            </div>
+
+            {/* Resting ECG */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.restingECG} *
+              </label>
+              <select
+                value={formData.restingECG}
+                onChange={(e) => handleInputChange('restingECG', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="Normal">{t.normal}</option>
+                <option value="ST">{t.stWave}</option>
+                <option value="LVH">{t.lvh}</option>
+              </select>
+            </div>
+
+            {/* Max Heart Rate */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.maxHR} *
+              </label>
+              <input
+                type="number"
+                value={formData.maxHR}
+                onChange={(e) => handleInputChange('maxHR', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., 150"
+              />
+              {errors.maxHR && <p className="text-red-600 text-xs mt-1">{errors.maxHR}</p>}
+            </div>
+
+            {/* Exercise Angina */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.exerciseAngina} *
+              </label>
+              <select
+                value={formData.exerciseAngina}
+                onChange={(e) => handleInputChange('exerciseAngina', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="N">{t.no}</option>
+                <option value="Y">{t.yes}</option>
+              </select>
+            </div>
+
+            {/* Oldpeak */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.stDepression} *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={formData.oldpeak}
+                onChange={(e) => handleInputChange('oldpeak', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="e.g., 1.5"
+              />
+              {errors.oldpeak && <p className="text-red-600 text-xs mt-1">{errors.oldpeak}</p>}
+            </div>
+
+            {/* ST Slope */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.stSlope} *
+              </label>
+              <select
+                value={formData.stSlope}
+                onChange={(e) => handleInputChange('stSlope', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              >
+                <option value="">{t.select}</option>
+                <option value="Up">{t.upsloping}</option>
+                <option value="Flat">{t.flat}</option>
+                <option value="Down">{t.downsloping}</option>
+              </select>
+            </div>
+          </div>
+
+          <button
+            onClick={calculateRisk}
+            className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
+          >
+            <Heart className="w-5 h-5" />
+            {t.calculate}
+          </button>
         </div>
 
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
+        {/* Results */}
+        {result && (
+          <div className={`rounded-lg shadow-lg p-6 border-l-4 ${result.riskColor}`}>
+            <div className="flex items-center gap-3 mb-4">
+              {result.riskLevel === t.highRisk && <AlertCircle className="w-8 h-8" />}
+              {result.riskLevel === t.moderateRisk && <Info className="w-8 h-8" />}
+              {result.riskLevel === t.lowRisk && <CheckCircle className="w-8 h-8" />}
+              <div>
+                <h3 className="text-2xl font-bold">{result.riskLevel}</h3>
+                <p className="text-sm opacity-80">{t.riskScore}: {result.riskScore}/20+</p>
+              </div>
             </div>
-            <div class="code-cell">
-                <div class="code-input"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd
-<span class="keyword">from</span> sklearn.pipeline <span class="keyword">import</span> Pipeline
-<span class="keyword">from</span> sklearn.compose <span class="keyword">import</span> ColumnTransformer
-<span class="keyword">from</span> sklearn.preprocessing <span class="keyword">import</span> OneHotEncoder, StandardScaler
-<span class="keyword">from</span> sklearn.ensemble <span class="keyword">import</span> RandomForestClassifier
-<span class="keyword">from</span> sklearn.model_selection <span class="keyword">import</span> train_test_split
-<span class="keyword">from</span> sklearn.metrics <span class="keyword">import</span> classification_report, accuracy_score
-<span class="keyword">import</span> joblib</div>
+
+            <div className="mt-4">
+              <h4 className="font-semibold mb-2">{t.recommendations}</h4>
+              <ul className="space-y-2">
+                {result.recommendations.map((rec, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="text-lg">•</span>
+                    <span className="text-sm">{rec}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
+
+            <div className="mt-6 p-4 bg-white bg-opacity-50 rounded-lg">
+              <p className="text-sm font-medium">
+                <strong>{t.provincialResources}</strong>
+              </p>
+              <p className="text-xs mt-2">
+                {t.resourcesText}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <div className="mt-6 bg-gray-100 rounded-lg p-4">
+          <p className="text-xs text-gray-700">
+            <strong> {t.disclaimer}</strong> {t.disclaimerText}
+          </p>
         </div>
 
-        <!-- Dataset Overview -->
-        <div class="cell markdown-cell">
-            <h2>Dataset Overview</h2>
-            <p>The dataset contains anonymized health information for patients, including features such as age, sex, cholesterol levels, and presence of heart disease. It is used to train a binary classification model to predict cardiovascular risk.</p>
-            
-            <p><strong>Feature Descriptions:</strong></p>
-            <ul>
-                <li><code>age</code> : Age of the patient</li>
-                <li><code>sex</code> : Gender</li>
-                <li><code>ChestPainType</code> : Chest pain type</li>
-                <li><code>RestingBP</code> : Resting blood pressure</li>
-                <li><code>Cholesterol</code> : Serum cholesterol in mg/dl</li>
-                <li><code>FastingBS</code> : Fasting blood sugar</li>
-                <li><code>RestingECG</code> : resting electrocardiogram results</li>
-                <li><code>MaxHR</code> : Maximum heart rate achieved</li>
-                <li><code>ExerciseAngina</code> : Exercise induced angina</li>
-                <li><code>oldpeak</code> : ST depression induced by exercise relative to rest</li>
-                <li><code>ST_Slope</code> : the slope of the peak exercise ST segment</li>
-                <li><code>target</code> : 1 = risk, 0 = no risk</li>
-            </ul>
+        {/* Footer */}
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>{t.footer}</p>
+          <p className="mt-2">{t.license}</p>
         </div>
-
-        <!-- Data Loading -->
-        <div class="cell markdown-cell">
-            <h3>Data Loading</h3>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">df = pd.read_csv(<span class="string">'/content/heart.csv'</span>)
-df.head()</div>
-            </div>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">Out[ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-output">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th></th>
-                                <th>Age</th>
-                                <th>Sex</th>
-                                <th>ChestPainType</th>
-                                <th>RestingBP</th>
-                                <th>Cholesterol</th>
-                                <th>FastingBS</th>
-                                <th>RestingECG</th>
-                                <th>MaxHR</th>
-                                <th>ExerciseAngina</th>
-                                <th>Oldpeak</th>
-                                <th>ST_Slope</th>
-                                <th>HeartDisease</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <th>0</th>
-                                <td>40</td>
-                                <td>M</td>
-                                <td>ATA</td>
-                                <td>140</td>
-                                <td>289</td>
-                                <td>0</td>
-                                <td>Normal</td>
-                                <td>172</td>
-                                <td>N</td>
-                                <td>0.0</td>
-                                <td>Up</td>
-                                <td>0</td>
-                            </tr>
-                            <tr>
-                                <th>1</th>
-                                <td>49</td>
-                                <td>F</td>
-                                <td>NAP</td>
-                                <td>160</td>
-                                <td>180</td>
-                                <td>0</td>
-                                <td>Normal</td>
-                                <td>156</td>
-                                <td>N</td>
-                                <td>1.0</td>
-                                <td>Flat</td>
-                                <td>1</td>
-                            </tr>
-                            <tr>
-                                <th>2</th>
-                                <td>37</td>
-                                <td>M</td>
-                                <td>ATA</td>
-                                <td>130</td>
-                                <td>283</td>
-                                <td>0</td>
-                                <td>ST</td>
-                                <td>98</td>
-                                <td>N</td>
-                                <td>0.0</td>
-                                <td>Up</td>
-                                <td>0</td>
-                            </tr>
-                            <tr>
-                                <th>3</th>
-                                <td>48</td>
-                                <td>F</td>
-                                <td>ASY</td>
-                                <td>138</td>
-                                <td>214</td>
-                                <td>0</td>
-                                <td>Normal</td>
-                                <td>108</td>
-                                <td>Y</td>
-                                <td>1.5</td>
-                                <td>Flat</td>
-                                <td>1</td>
-                            </tr>
-                            <tr>
-                                <th>4</th>
-                                <td>54</td>
-                                <td>M</td>
-                                <td>NAP</td>
-                                <td>150</td>
-                                <td>195</td>
-                                <td>0</td>
-                                <td>Normal</td>
-                                <td>122</td>
-                                <td>N</td>
-                                <td>0.0</td>
-                                <td>Up</td>
-                                <td>0</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info Cell -->
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">print(df.info())</div>
-                <div class="code-output">
-                    <div class="output-text">&lt;class 'pandas.core.frame.DataFrame'&gt;
-RangeIndex: 918 entries, 0 to 917
-Data columns (total 12 columns):
- #   Column          Non-Null Count  Dtype  
----  ------          --------------  -----  
- 0   Age             918 non-null    int64  
- 1   Sex             918 non-null    object 
- 2   ChestPainType   918 non-null    object 
- 3   RestingBP       918 non-null    int64  
- 4   Cholesterol     918 non-null    int64  
- 5   FastingBS       918 non-null    int64  
- 6   RestingECG      918 non-null    object 
- 7   MaxHR           918 non-null    int64  
- 8   ExerciseAngina  918 non-null    object 
- 9   Oldpeak         918 non-null    float64
- 10  ST_Slope        918 non-null    object 
- 11  HeartDisease    918 non-null    int64  
-dtypes: float64(1), int64(6), object(5)
-memory usage: 86.2+ KB
-None</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Missing Values -->
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">df.isnull().sum()</div>
-                <div class="code-output">
-                    <div class="output-text">Age               0
-Sex               0
-ChestPainType     0
-RestingBP         0
-Cholesterol       0
-FastingBS         0
-RestingECG        0
-MaxHR             0
-ExerciseAngina    0
-Oldpeak           0
-ST_Slope          0
-HeartDisease      0
-dtype: int64</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Preprocessing -->
-        <div class="cell markdown-cell">
-            <h3>Data Preprocessing</h3>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input"><span class="comment"># Separate features and target</span>
-X = df.drop(<span class="string">'HeartDisease'</span>, axis=<span class="string">1</span>)
-y = df[<span class="string">'HeartDisease'</span>]</div>
-            </div>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">categorical_cols = [<span class="string">"Sex"</span>, <span class="string">"ChestPainType"</span>, <span class="string">"RestingECG"</span>, <span class="string">"ExerciseAngina"</span>, <span class="string">"ST_Slope"</span>]
-numerical_cols = [<span class="string">"Age"</span>, <span class="string">"RestingBP"</span>, <span class="string">"Cholesterol"</span>, <span class="string">"FastingBS"</span>, <span class="string">"MaxHR"</span>, <span class="string">"Oldpeak"</span>]</div>
-            </div>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">categorical_transformer = OneHotEncoder(handle_unknown=<span class="string">'ignore'</span>)
-numerical_transformer = StandardScaler()</div>
-            </div>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">preprocessor = ColumnTransformer(
-    transformers=[
-        (<span class="string">'num'</span>, numerical_transformer, numerical_cols),
-        (<span class="string">'cat'</span>, categorical_transformer, categorical_cols)
-    ]
-)</div>
-            </div>
-        </div>
-
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">pipeline = Pipeline(steps=[
-    (<span class="string">'preprocessor'</span>, preprocessor),
-    (<span class="string">'classifier'</span>, RandomForestClassifier(random_state=<span class="string">42</span>))
-])</div>
-            </div>
-        </div>
-
-        <!-- Model Training -->
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input">X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=<span class="string">0.2</span>, random_state=<span class="string">42</span>)
-
-pipeline.fit(X_train, y_train)
-
-print(<span class="string">f"Model accuracy: {pipeline.score(X_test, y_test):.2f}"</span>)</div>
-                <div class="code-output">
-                    <div class="output-text">Model accuracy: 0.88</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Classification Report -->
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input"><span class="comment"># f1 score and other metrics</span>
-y_pred = pipeline.predict(X_test)
-print(classification_report(y_test, y_pred))</div>
-                <div class="code-output">
-                    <div class="output-text">              precision    recall  f1-score   support
-
-           0       0.85      0.87      0.86        77
-           1       0.90      0.89      0.90       107
-
-    accuracy                           0.88       184
-   macro avg       0.88      0.88      0.88       184
-weighted avg       0.88      0.88      0.88       184</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Save Model -->
-        <div class="cell">
-            <div class="cell-header">
-                <span class="cell-label">In [ ]:</span>
-            </div>
-            <div class="code-cell">
-                <div class="code-input"><span class="comment">#Saving the Model</span>
-joblib.dump(pipeline, <span class="string">"cr_model.pkl"</span>)</div>
-                <div class="code-output">
-                    <div class="output-text">['cr_model.pkl']</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Conclusion -->
-        <div class="cell markdown-cell">
-            <h2>Conclusion</h2>
-            <p>The trained Random Forest model achieved good accuracy and F1-score. The model is saved for integration into the Streamlit-based CardioRural application.</p>
-            
-            <h2>Next Steps</h2>
-            <ul>
-                <li>Validate the model with external data</li>
-                <li>Tune hyperparameters for better performance</li>
-                <li>Deploy on low-resource mobile platforms</li>
-            </ul>
-        </div>
+      </div>
     </div>
-
-    <script>
-        function downloadHTML() {
-            const htmlContent = document.documentElement.outerHTML;
-            const blob = new Blob([htmlContent], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'heart_disease_model.html';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-    </script>
-
-</body></html>
+  );
+}
